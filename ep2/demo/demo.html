@@ -1,0 +1,41 @@
+<html>
+  <body>
+    <script src="./react.development.js"></script>
+    <script src="./react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.js"></script>
+    <div id="container"></div>
+    <iframe
+      id="visualizer"
+      src="./visualizer.html"
+      style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 70%;
+        width: 100%;
+        border: 0;
+        box-shadow: 1px -1px 7px rgb(0 0 0 / 40%);
+      "
+    ></iframe>
+    <script type="text/babel">
+      const root = ReactDOM.createRoot(document.getElementById("container"));
+      window.onmessage = (e) => {
+        if (e.data === "visualizer-ready") {
+          root.render(
+            <div>
+              <h1>React Internals Visualizer</h1>
+              <p>
+                <button>
+                  <span>click</span>
+                  <span>me</span>
+                  <span>!!!</span>
+                </button>
+              </p>
+            </div>
+          );
+        }
+      };
+    </script>
+  </body>
+</html>
