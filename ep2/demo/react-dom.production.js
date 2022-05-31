@@ -1,3 +1,55 @@
+const ReactVisualizerInspector = {
+  meaningfulFiberProperties: [
+    "tag",
+    "elementType",
+    "type",
+    "child",
+    "sibling",
+    "return",
+  ],
+  UID: Symbol(),
+  isPrimitive: (data) => {
+    return (
+      data == null ||
+      typeof data === "string" ||
+      typeof data === "number" ||
+      typeof data === "boolean" ||
+      typeof data === "symbol" // but we cannot serialize symbol
+    );
+  },
+  uid: (() => {
+    let i = 0;
+    return () => i++;
+  })(),
+
+  attachUID(node) {
+    node[ReactVisualizerInspector.UID] = ReactVisualizerInspector.uid();
+  },
+  normalizeFiber(data) {
+    if (ReactVisualizerInspector.isPrimitive(data)) return data;
+
+    if (ReactVisualizerInspector.UID in data) {
+      return {
+        UID: data[ReactVisualizerInspector.UID],
+      };
+    }
+
+    return Object.keys(data).reduce((result, key) => {
+      result[key] = ReactVisualizerInspector.normalizeFiber(data[key]);
+      return result;
+    }, {});
+  },
+
+  log(message) {
+    // traverse through the object and replace fiber which has UID
+    const iframe = document.querySelector("#visualizer");
+    iframe.contentWindow.postMessage(
+      JSON.stringify(ReactVisualizerInspector.normalizeFiber(message)),
+      "*"
+    );
+  },
+};
+
 /**
  * @license React
  * react-dom.production.min.js
@@ -9391,7 +9443,7 @@
     function getSuspenseInstanceFallbackErrorDetails(instance) {
       const nextSibling = instance.nextSibling;
       let errorMessage;
-        /*, errorComponentStack, errorHash*/
+      /*, errorComponentStack, errorHash*/
 
       if (
         nextSibling &&
@@ -23521,7 +23573,49 @@
 
     const createFiber = function (tag, pendingProps, key, mode) {
       // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
+      const fiberNode = new FiberNode(tag, pendingProps, key, mode);
+
+      ReactVisualizerInspector.attachUID(fiberNode);
+
+      ReactVisualizerInspector.log({
+        type: "create-fiber",
+        payload: {
+          fiber: fiberNode,
+        },
+      });
+
+      const proxy = new Proxy(fiberNode, {
+        set(target, p, value) {
+          if (ReactVisualizerInspector.meaningfulFiberProperties.includes(p)) {
+            ReactVisualizerInspector.log({
+              type: "update-fiber",
+              payload: {
+                fiber: target,
+                property: p,
+                value,
+              },
+            });
+          }
+          return Reflect.set(target, p, value);
+        },
+      });
+
+      // const gcRegistry = new FinalizationRegistry((uid) => {
+      //   ReactVisualizerInspector.log({
+      //     type: "delete-fiber",
+      //     payload: {
+      //       fiber: {
+      //         [ReactVisualizerInspector.UID]: uid,
+      //       },
+      //     },
+      //   });
+      // });
+
+      // gcRegistry.register(fiberNode, proxy[ReactVisualizerInspector.UID]);
+
+      // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
       return new FiberNode(tag, pendingProps, key, mode);
+      return proxy;
     };
 
     function shouldConstruct(Component) {

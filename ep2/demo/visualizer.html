@@ -138,6 +138,7 @@
         }
       }
       function Renderer({ shapes }) {
+        if (shapes == null) return null;
         return (
           <svg
             version="1.1"
@@ -150,19 +151,44 @@
         );
       }
 
+      const IntervalRenderingSnapshot = 500;
       function App() {
-        const [shapes, setShapes] = React.useState([]);
+        const [snapshots, setSnapshots] = React.useState([]);
+        const snapshotsRef = React.useRef(snapshots);
+        React.useLayoutEffect(() => {
+          snapshotsRef.current = snapshots;
+        }, [snapshots]);
+
+        const [currentSnapshotIndex, setCurrentShapshotIndex] =
+          React.useState(0);
+
+        // 1. hold all the snapshots
+        // 2. keep track of current cursor on the snapshot list
+        // 3. move forward the cursor with internal
         React.useEffect(() => {
           window.addEventListener("message", (e) => {
             const messsage = JSON.parse(e.data);
             process(messsage);
-            setShapes(toShapes());
+
+            // append the latest snapshot
+            const snapshot = toShapes();
+            setSnapshots((snapshots) => [...snapshots, snapshot]);
           });
 
           window.parent.postMessage("visualizer-ready", "*");
+
+          window.setInterval(() => {
+            setCurrentShapshotIndex((index) => {
+              const snapshots = snapshotsRef.current;
+              if (snapshots) {
+                return Math.min(snapshots.length - 1, index + 1);
+              }
+              return index;
+            });
+          }, IntervalRenderingSnapshot);
         }, []);
 
-        return <Renderer shapes={shapes} />;
+        return <Renderer shapes={snapshots[currentSnapshotIndex]} />;
       }
 
       const root = ReactDOM.createRoot(document.getElementById("container"));
