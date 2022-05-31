@@ -8,6 +8,7 @@ const ReactVisualizerInspector = {
     "return",
   ],
   UID: Symbol(),
+  FiberSubtype: Symbol(),
   isPrimitive: (data) => {
     return (
       data == null ||
@@ -23,14 +24,21 @@ const ReactVisualizerInspector = {
   })(),
 
   attachUID(node) {
-    node[ReactVisualizerInspector.UID] = ReactVisualizerInspector.uid();
+    const uid = ReactVisualizerInspector.uid();
+    node[ReactVisualizerInspector.UID] = uid;
+  },
+  setFiberSubtype(node, subtype) {
+    node[ReactVisualizerInspector.FiberSubtype] = subtype;
   },
   normalizeFiber(data) {
+    if (typeof data === "function") return data.name;
     if (ReactVisualizerInspector.isPrimitive(data)) return data;
 
     if (ReactVisualizerInspector.UID in data) {
       return {
         UID: data[ReactVisualizerInspector.UID],
+        subType: data[ReactVisualizerInspector.FiberSubtype] ?? "node",
+        tag: data.tag,
       };
     }
 
@@ -23584,6 +23592,7 @@ const ReactVisualizerInspector = {
         },
       });
 
+      console.log("create fiber", fiberNode);
       const proxy = new Proxy(fiberNode, {
         set(target, p, value) {
           if (ReactVisualizerInspector.meaningfulFiberProperties.includes(p)) {
@@ -23611,7 +23620,7 @@ const ReactVisualizerInspector = {
       //   });
       // });
 
-      // gcRegistry.register(fiberNode, proxy[ReactVisualizerInspector.UID]);
+      // gcRegistry.register(proxy, proxy[ReactVisualizerInspector.UID]);
 
       return proxy;
     };
@@ -24036,13 +24045,41 @@ const ReactVisualizerInspector = {
       onRecoverableError,
       transitionCallbacks
     ) {
-      const root = new FiberRootNode(
+      const fiberNode = new FiberRootNode(
         containerInfo,
         tag,
         hydrate,
         identifierPrefix,
         onRecoverableError
       );
+      console.log("root", fiberNode);
+
+      ReactVisualizerInspector.attachUID(fiberNode);
+      ReactVisualizerInspector.setFiberSubtype(fiberNode, "root");
+
+      ReactVisualizerInspector.log({
+        type: "create-fiber",
+        payload: {
+          fiber: fiberNode,
+        },
+      });
+
+      const root = new Proxy(fiberNode, {
+        set(target, p, value) {
+          if (ReactVisualizerInspector.meaningfulFiberProperties.includes(p)) {
+            ReactVisualizerInspector.log({
+              type: "update-fiber",
+              payload: {
+                fiber: target,
+                property: p,
+                value,
+              },
+            });
+          }
+          return Reflect.set(target, p, value);
+        },
+      });
+
       // stateNode is any.
 
       const uninitializedFiber = createHostRootFiber(tag, isStrictMode);

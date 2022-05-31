@@ -1,7 +1,10 @@
 <html>
   <body>
-    <script src="https://unpkg.com/react@18.1.0/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18.1.0/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18.1.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.1.0/umd/react-dom.development.js"></script>
+    <!-- <script src="https://unpkg.com/react@18.1.0/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.1.0/umd/react-dom.production.min.js"></script> -->
+
     <script src="https://unpkg.com/babel-standalone@6/babel.js"></script>
     <div id="container"></div>
     <script>
@@ -13,9 +16,11 @@
           case "create-fiber":
             // 1. create a new Node in fiberMap Map<UID, node>
             // 2. put the node in fiberTree
-            const UID = message.payload.fiber.UID;
+            const { UID, subType, tag } = message.payload.fiber;
             const node = {
-              UID: message.payload.fiber.UID,
+              UID,
+              subType,
+              tag,
             };
 
             fiberMap.set(UID, node);
@@ -66,8 +71,8 @@
               }
               // TODO: handle more types, custom component .etc
               case "elementType":
-                // case "type":
-                // case "tag":
+              // case "type":
+              case "tag":
                 const target = fiberMap.get(message.payload.fiber.UID);
                 target[property] = message.payload.value;
                 break;
@@ -81,13 +86,19 @@
         }
       };
 
+      const getLabel = (node) => {
+        if (node.subType === "root") return "<Root>";
+        if (node.tag === 3) return "<HostRoot>";
+        return node.elementType || node.type;
+      };
       const toShapes = () => {
         const shapes = [];
 
         const walk = (fiber, pos) => {
+          const label = getLabel(fiber);
           shapes.push({
             type: "rectangle",
-            label: fiber.elementType || fiber.type, // TODO figure it out what these are
+            label: label,
             width: 100,
             height: 40,
             pos,
@@ -99,13 +110,13 @@
           }
 
           if (fiber.sibling) {
-            walk(fiber.sibling, { x: pos.x + 150, y: pos.y });
+            walk(fiber.sibling, { x: pos.x + 120, y: pos.y });
           }
         };
 
         const roots = [...fiberTreeRoots];
         for (let i = 0; i < roots.length; i++) {
-          walk(roots[i], { x: 150 * i, y: 50 });
+          walk(roots[i], { x: 300 * i, y: 50 });
         }
 
         return shapes;
@@ -124,12 +135,14 @@
                 y={shape.pos.y}
                 fill="transparent"
                 stroke="#000"
+                key={shape.key}
               />,
               <text
                 x={shape.pos.x + shape.width / 2}
                 y={shape.pos.y + shape.height / 2}
-                text-anchor="middle"
+                textAnchor="middle"
                 fill="#000"
+                key={`${shape.key}-label`}
               >
                 {shape.label}
               </text>,
@@ -152,7 +165,7 @@
         );
       }
 
-      const IntervalRenderingSnapshot = 500;
+      const IntervalRenderingSnapshot = 100;
       function App() {
         const [snapshots, setSnapshots] = React.useState([]);
         const snapshotsRef = React.useRef(snapshots);
@@ -170,7 +183,6 @@
           window.addEventListener("message", (e) => {
             const messsage = JSON.parse(e.data);
             process(messsage);
-            console.log(messsage);
             // append the latest snapshot
             const snapshot = toShapes();
             setSnapshots((snapshots) => [...snapshots, snapshot]);

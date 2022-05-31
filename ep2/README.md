@@ -1,6 +1,5 @@
-# Memo for Episode 1
+# Memo for Episode 2
 
-I tried to build some PoC demo for the idea of visualization,
-it could be tried out in `/ep1/demo/demo.html`.
+In this episode, we've tried to store all the snapshot and animated the diagram
 
-Some random thoughts are in [this issue](https://github.com/JSerZANP/react-internals-visualizer/issues/1)
+It could be tried out in [demo](./demo/demo.html)
