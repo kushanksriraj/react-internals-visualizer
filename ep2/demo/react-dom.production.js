@@ -23613,8 +23613,6 @@ const ReactVisualizerInspector = {
 
       // gcRegistry.register(fiberNode, proxy[ReactVisualizerInspector.UID]);
 
-      // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
-      return new FiberNode(tag, pendingProps, key, mode);
       return proxy;
     };
 

@@ -64,9 +64,10 @@
                 from.sibling = sibling;
                 break;
               }
+              // TODO: handle more types, custom component .etc
               case "elementType":
-              case "type":
-              case "tag":
+                // case "type":
+                // case "tag":
                 const target = fiberMap.get(message.payload.fiber.UID);
                 target[property] = message.payload.value;
                 break;
@@ -169,7 +170,7 @@
           window.addEventListener("message", (e) => {
             const messsage = JSON.parse(e.data);
             process(messsage);
-
+            console.log(messsage);
             // append the latest snapshot
             const snapshot = toShapes();
             setSnapshots((snapshots) => [...snapshots, snapshot]);

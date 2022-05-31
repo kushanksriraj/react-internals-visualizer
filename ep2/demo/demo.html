@@ -20,6 +20,24 @@
     ></iframe>
     <script type="text/babel">
       const root = ReactDOM.createRoot(document.getElementById("container"));
+
+      // function App() {
+      //   const [showMore, setShowMore] = React.useState(false);
+      //   return (
+      //     <div>
+      //       <h1>React Internals Visualizer</h1>
+      //       <p>
+      //         <button onClick={() => setShowMore((showMore) => !showMore)}>
+      //           <span>click</span>
+      //           <span>me</span>
+      //           <span>!!!</span>
+      //         </button>
+      //       </p>
+      //     </div>
+      //   );
+      // }
+
+      // root.render(<App />);
       window.onmessage = (e) => {
         if (e.data === "visualizer-ready") {
           root.render(
